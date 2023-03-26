@@ -154,18 +154,25 @@ fn parse_command(command: String) -> Result<Command, ParsingError> {
     }
 }
 
+fn command_result<T>(result: Result<T, AccountingError>) -> () {
+    match result {
+        Ok(_) => println!("Ok"),
+        Err(e) => println!("Command failed {:?}", e)
+    }
+}
+
 fn main() {
     let mut accounts = Accounts::new();
     loop {
         match parse_command(read_from_stdin("Command:\n")) {
             Ok(Command::Deposit { account, amount}) => {
-                accounts.deposit(account.as_str(), amount).unwrap();
+                command_result(accounts.deposit(account.as_str(), amount));  
             },
             Ok(Command::Withdraw { account, amount}) => {
-                accounts.withdraw(account.as_str(), amount).unwrap();
+                command_result(accounts.withdraw(account.as_str(), amount)); 
             },
             Ok(Command::Send {sender, recipient, amount}) => {
-                accounts.send(sender.as_str(), recipient.as_str(), amount).unwrap();
+                command_result(accounts.send(sender.as_str(), recipient.as_str(), amount));
             },
             Ok(Command::Unknown) => {println!("Unknow command");},
             Ok(Command::Quit) => {println!("Ok, bye!"); break;},
