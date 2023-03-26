@@ -157,31 +157,20 @@ fn parse_command(command: String) -> Result<Command, ParsingError> {
 fn main() {
     let mut accounts = Accounts::new();
     loop {
-        let command = parse_command(read_from_stdin("Command:\n"));
-        if let Ok(Command::Deposit { account, amount }) = command {
-            accounts.deposit(account.as_str(), amount).unwrap();
-        } else if let Ok(Command::Withdraw { account, amount }) = command {
-            accounts.withdraw(account.as_str(), amount).unwrap();
-        } else if let Ok(Command::Send {
-            sender,
-            recipient,
-            amount,
-        }) = command
-        {
-            accounts
-                .send(sender.as_str(), recipient.as_str(), amount)
-                .unwrap();
-        } else if let Ok(Command::Print) = command {
-            println!("{:?}", accounts);
-        } else if let Ok(Command::Unknown) = command {
-            println!(
-                "Sorry, try again, available commands are deposit, withdraw, send, print, quit"
-            );
-        } else if let Ok(Command::Quit) = command {
-            println!("Ok, bye!");
-            break;
-        } else if let Err(e) = command {
-            println!("Error {:?}", e);
-        }
+        match parse_command(read_from_stdin("Command:\n")) {
+            Ok(Command::Deposit { account, amount}) => {
+                accounts.deposit(account.as_str(), amount).unwrap();
+            },
+            Ok(Command::Withdraw { account, amount}) => {
+                accounts.withdraw(account.as_str(), amount).unwrap();
+            },
+            Ok(Command::Send {sender, recipient, amount}) => {
+                accounts.send(sender.as_str(), recipient.as_str(), amount).unwrap();
+            },
+            Ok(Command::Unknown) => {println!("Unknow command");},
+            Ok(Command::Quit) => {println!("Ok, bye!"); break;},
+            Ok(Command::Print) => {println!("{:?}", accounts);},
+            Err(e) => {println!("Error: {:?}", e)}
+        };
     }
 }
