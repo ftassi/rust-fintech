@@ -1,4 +1,8 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    error::Error,
+    io::{stdin, stdout, Read, Write},
+};
 
 #[derive(Debug)]
 struct Accounts {
@@ -90,63 +94,80 @@ enum Tx {
     Withdraw { account: String, amount: u64 },
 }
 
-fn main() {
-    println!("Hello, accounting world!");
+#[derive(Debug)]
+enum Command {
+    Deposit {
+        account: String,
+        amount: u64,
+    },
+    Withdraw {
+        account: String,
+        amount: u64,
+    },
+    Send {
+        sender: String,
+        recipient: String,
+        amount: u64,
+    },
+    Print,
+    Quit,
+    Unknown,
+}
 
-    // We are using simple &str instances as keys
-    // for more sophisticated keys (e.g. hashes)
-    // the data type could remain the same
-    let bob = "bob";
-    let alice = "alice";
-    let charlie = "charlie";
-    let initial_amount = 100;
+fn read_from_stdin(label: &str) -> String {
+    std::io::stdout().write_all(label.as_bytes()).unwrap();
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+    input.trim().to_string()
+}
 
-    // Creates the basic ledger and a tx log container
-    let mut ledger = Accounts::new();
-    let mut tx_log = vec![];
-
-    // Deposit an amount to each account
-    for signer in &[bob, alice, charlie] {
-        let status = ledger.deposit(*signer, initial_amount);
-        println!("Depositing {} for {}: {:?}", signer, initial_amount, status);
-        // Add the resulting transaction to a list of transactions
-        // .unwrap() will crash the program if the status is an error.
-        tx_log.push(status.unwrap());
+fn parse_command(command: String) -> Command {
+    match command.as_str() {
+        "deposit" => Command::Deposit {
+            account: read_from_stdin("Account:\n"),
+            amount: read_from_stdin("Amount:\n").parse::<u64>().unwrap(),
+        },
+        "withdraw" => Command::Withdraw {
+            account: read_from_stdin("Account:\n"),
+            amount: read_from_stdin("Amount:\n").parse::<u64>().unwrap(),
+        },
+        "send" => Command::Send {
+            sender: read_from_stdin("Sender:\n"),
+            recipient: read_from_stdin("Recipient:\n"),
+            amount: read_from_stdin("Amount:\n").parse::<u64>().unwrap(),
+        },
+        "print" => Command::Print,
+        "quit" => Command::Quit,
+        _ => Command::Unknown,
     }
+}
 
-    // Send currency from one account (bob) to the other (alice)
-    let send_amount = 10_u64;
-    let status = ledger.send(bob, alice, send_amount);
-    println!(
-        "Sent {} from {} to {}: {:?}",
-        send_amount, bob, alice, status
-    );
-
-    // Add both transactions to the transaction log
-    let (tx1, tx2) = status.unwrap();
-    tx_log.push(tx1);
-    tx_log.push(tx2);
-
-    // Withdraw everything from the accounts
-    let tx = ledger.withdraw(charlie, initial_amount).unwrap();
-    tx_log.push(tx);
-    let tx = ledger
-        .withdraw(alice, initial_amount + send_amount)
-        .unwrap();
-    tx_log.push(tx);
-
-    // Here we are withdrawing too much and there won't be a transaction
-    println!(
-        "Withdrawing {} from {}: {:?}",
-        initial_amount,
-        bob,
-        ledger.withdraw(bob, initial_amount)
-    );
-    // Withdrawing the expected amount results in a transaction
-    let tx = ledger.withdraw(bob, initial_amount - send_amount).unwrap();
-    tx_log.push(tx);
-
-    // {:?} prints the Debug implementation, {:#?} pretty-prints it
-    println!("Ledger empty: {:?}", ledger);
-    println!("The TX log: {:#?}", tx_log);
+fn main() {
+    let mut accounts = Accounts::new();
+    loop {
+        let command = parse_command(read_from_stdin("Command:\n"));
+        if let Command::Deposit { account, amount } = command {
+            accounts.deposit(account.as_str(), amount).unwrap();
+        } else if let Command::Withdraw { account, amount } = command {
+            accounts.withdraw(account.as_str(), amount).unwrap();
+        } else if let Command::Send {
+            sender,
+            recipient,
+            amount,
+        } = command
+        {
+            accounts
+                .send(sender.as_str(), recipient.as_str(), amount)
+                .unwrap();
+        } else if let Command::Print = command {
+            println!("{:?}", accounts);
+        } else if let Command::Unknown = command {
+            println!(
+                "Sorry, try again, available commands are deposit, withdraw, send, print, quit"
+            );
+        } else if let Command::Quit = command {
+            println!("Ok, bye!");
+            break;
+        }
+    }
 }
