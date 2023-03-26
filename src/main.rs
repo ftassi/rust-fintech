@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     error::Error,
-    io::{stdin, stdout, Read, Write},
+    io::{stdin, stdout, Read, Write}, num::ParseIntError,
 };
 
 #[derive(Debug)]
@@ -121,24 +121,27 @@ fn read_from_stdin(label: &str) -> String {
     input.trim().to_string()
 }
 
-fn parse_command(command: String) -> Command {
+#[derive(Debug)]
+enum ParsingError {
+    InvalidAmount(ParseIntError)
+}
+
+fn read_amount() -> Result<u64, ParsingError> {
+    read_from_stdin("Amount:\n").parse::<u64>().map_err(ParsingError::InvalidAmount)
+}
+
+fn parse_command(command: String) -> Result<Command, ParsingError> {
     match command.as_str() {
-        "deposit" => Command::Deposit {
-            account: read_from_stdin("Account:\n"),
-            amount: read_from_stdin("Amount:\n").parse::<u64>().unwrap(),
-        },
-        "withdraw" => Command::Withdraw {
-            account: read_from_stdin("Account:\n"),
-            amount: read_from_stdin("Amount:\n").parse::<u64>().unwrap(),
-        },
-        "send" => Command::Send {
+        "deposit" => read_amount().map(|amount| Command::Deposit { account: read_from_stdin("Account:\n"), amount}),
+        "withdraw" => read_amount().map(|amount| Command::Withdraw { account: read_from_stdin("Account:\n"), amount }),
+        "send" => read_amount().map(|amount| Command::Send {
             sender: read_from_stdin("Sender:\n"),
             recipient: read_from_stdin("Recipient:\n"),
-            amount: read_from_stdin("Amount:\n").parse::<u64>().unwrap(),
-        },
-        "print" => Command::Print,
-        "quit" => Command::Quit,
-        _ => Command::Unknown,
+            amount
+        }),
+        "print" => Ok(Command::Print),
+        "quit" => Ok(Command::Quit),
+        _ => Ok(Command::Unknown),
     }
 }
 
@@ -146,28 +149,30 @@ fn main() {
     let mut accounts = Accounts::new();
     loop {
         let command = parse_command(read_from_stdin("Command:\n"));
-        if let Command::Deposit { account, amount } = command {
+        if let Ok(Command::Deposit { account, amount }) = command {
             accounts.deposit(account.as_str(), amount).unwrap();
-        } else if let Command::Withdraw { account, amount } = command {
+        } else if let Ok(Command::Withdraw { account, amount }) = command {
             accounts.withdraw(account.as_str(), amount).unwrap();
-        } else if let Command::Send {
+        } else if let Ok(Command::Send {
             sender,
             recipient,
             amount,
-        } = command
+        }) = command
         {
             accounts
                 .send(sender.as_str(), recipient.as_str(), amount)
                 .unwrap();
-        } else if let Command::Print = command {
+        } else if let Ok(Command::Print) = command {
             println!("{:?}", accounts);
-        } else if let Command::Unknown = command {
+        } else if let Ok(Command::Unknown) = command {
             println!(
                 "Sorry, try again, available commands are deposit, withdraw, send, print, quit"
             );
-        } else if let Command::Quit = command {
+        } else if let Ok(Command::Quit) = command {
             println!("Ok, bye!");
             break;
+        } else if let Err(e) = command {
+            println!("Error {:?}", e);
         }
     }
 }
