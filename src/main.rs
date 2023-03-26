@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
-    error::Error,
-    io::{stdin, stdout, Read, Write},
+    io::{Write},
     num::ParseIntError,
 };
 
@@ -20,9 +19,9 @@ impl Accounts {
         if let Some(account) = self.accounts.get_mut(signer) {
             (*account)
                 .checked_add(amount)
-                .and_then(|r| {
+                .map(|r| {
                     *account = r;
-                    Some(r)
+                    r
                 })
                 .ok_or(AccountingError::AccountOverFunded(
                     signer.to_string(),
@@ -45,9 +44,9 @@ impl Accounts {
         if let Some(account) = self.accounts.get_mut(signer) {
             (*account)
                 .checked_sub(amount)
-                .and_then(|r| {
+                .map(|r| {
                     *account = r;
-                    Some(r)
+                    r
                 })
                 .ok_or(AccountingError::AccountUnderFunded(
                     signer.to_string(),
@@ -161,7 +160,7 @@ fn parse_command(command: String) -> Result<Command, ParsingError> {
     }
 }
 
-fn command_result<T>(result: Result<T, AccountingError>) -> () {
+fn command_result<T>(result: Result<T, AccountingError>) {
     match result {
         Ok(_) => println!("Ok"),
         Err(e) => println!("Command failed {:?}", e),
