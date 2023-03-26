@@ -132,13 +132,22 @@ fn read_amount() -> Result<u64, ParsingError> {
 
 fn parse_command(command: String) -> Result<Command, ParsingError> {
     match command.as_str() {
-        "deposit" => read_amount().map(|amount| Command::Deposit { account: read_from_stdin("Account:\n"), amount}),
-        "withdraw" => read_amount().map(|amount| Command::Withdraw { account: read_from_stdin("Account:\n"), amount }),
-        "send" => read_amount().map(|amount| Command::Send {
-            sender: read_from_stdin("Sender:\n"),
-            recipient: read_from_stdin("Recipient:\n"),
-            amount
-        }),
+        "deposit" => {
+            let account = read_from_stdin("Account:\n");
+            let amount = read_amount(); 
+            amount.map(|amount| Command::Deposit { account, amount})
+        },
+        "withdraw" => {
+            let account = read_from_stdin("Account:\n");
+            let amount = read_amount(); 
+            amount.map(|amount| Command::Withdraw { account, amount})
+        },
+        "send" => {
+            let sender = read_from_stdin("Sender:\n");
+            let recipient = read_from_stdin("Recipient:\n");
+            let amount = read_amount(); 
+            amount.map(|amount| Command::Send { sender, recipient, amount})
+        },
         "print" => Ok(Command::Print),
         "quit" => Ok(Command::Quit),
         _ => Ok(Command::Unknown),
