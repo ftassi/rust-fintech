@@ -5,7 +5,7 @@ pub enum ParsingError {
     InvalidAmount(ParseIntError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum AccountingError {
     AccountNotFound(String),
     AccountUnderFunded(String, u64),
