@@ -1,5 +1,5 @@
+use crate::{errors::AccountingError, tx::Tx};
 use std::collections::HashMap;
-use crate::{tx::Tx, errors::AccountingError};
 
 #[derive(Debug)]
 pub struct Accounts {
@@ -20,10 +20,10 @@ impl Accounts {
                     *account = r;
                     r
                 })
-            .ok_or(AccountingError::AccountOverFunded(
+                .ok_or(AccountingError::AccountOverFunded(
                     signer.to_string(),
                     amount,
-            ))
+                ))
                 .map(|_| Tx::Deposit {
                     account: signer.to_string(),
                     amount,
@@ -45,10 +45,10 @@ impl Accounts {
                     *account = r;
                     r
                 })
-            .ok_or(AccountingError::AccountUnderFunded(
+                .ok_or(AccountingError::AccountUnderFunded(
                     signer.to_string(),
                     amount,
-            ))
+                ))
                 .map(|_| Tx::Withdraw {
                     account: signer.to_string(),
                     amount,
@@ -77,3 +77,6 @@ impl Accounts {
         Ok((withdraw, deposit))
     }
 }
+
+#[cfg(test)]
+mod tests {}
